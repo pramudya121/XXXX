@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>PRAMZX DeFi on Monad Testnet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap');
+  /* Reset and base styles */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Kanit', sans-serif;
+  }
+  html, body {
+    height: 100%;
+    background: url('https://wallpapercave.com/wp/wp7505131.jpg') no-repeat center center fixed;
+    background-size: cover;
+    color: #f0f0f0;
+    overflow: hidden;
+  }
+  #overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(10, 10, 10, 0.75);
+    z-index: 0;
+  }
+  #app {
+    position: relative;
+    max-width: 5000px;
+    max-height: 5000px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+    padding: 10px 20px 20px 20px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #3C7DD9;
+  }
+  header h1 {
+    font-weight: 700;
+    font-size: 2rem;
+    color: #eaf4ff;
+    text-shadow: 1px 1px 5px #3C7DD9;
+  }
+  button#connectWalletBtn {
+    background: #3C7DD9;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  button#connectWalletBtn:hover {
+    background: #2a5dadec;
+  }
+  #walletAddress {
+    font-size: 0.9rem;
+    color: #a3bffd;
+    font-weight: 600;
+    max-width: 300px;
+    word-break: break-all;
+  }
+  nav {
+    margin: 20px 0 10px 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  nav button {
+    background: transparent;
+    border: 2px solid #3C7DD9;
+    padding: 10px 14px;
+    color: #3C7DD9;
+    font-weight: 700;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: background 0.3s, color 0.3s;
+    min-width: 90px;
+  }
+  nav button.active, nav button:hover {
+    background: #3C7DD9;
+    color: white;
+  }
+  main {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(30,30,40,0.85);
+    border-radius: 15px;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+  }
+  section {
+    display: none;
+    flex-direction: column;
+  }
+  section.active {
+    display: flex;
+  }
+  /* Form element styling */
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  label {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #aad7ff;
+  }
+  input[type="text"], input[type="number"], select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #3C7DD9;
+    background: #20232a;
+    color: #e2e8f0;
+    font-size: 1rem;
+    outline-offset: 2px;
+    transition: border-color 0.3s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: #72aaff;
+  }
+  button.submitBtn {
+    align-self: center;
+    margin-top: 10px;
+    background: #3C7DD9;
+    border: none;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    min-width: 140px;
+  }
+  button.submitBtn:hover:not(:disabled) {
+    background: #5a94e4;
+  }
+  button.submitBtn:disabled {
+    background: #4a5f7e;
+    cursor: not-allowed;
+  }
+  /* Balance display */
+  #balances {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+  }
+  .balanceItem {
+    background: #2b2f3b;
+    border-radius: 12px;
+    padding: 10px 15px;
+    min-width: 100px;
+    text-align: center;
+    color: #b0c9ff;
+    font-weight: 700;
+    box-shadow: 0 0 10px #3C7DD9;
+  }
+  /* Modal styles */
+  #modalBackdrop {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.75);
+    justify-content: center;
+    align-items: center;
+  }
+  #modal {
+    background: #1f2937;
+    border-radius: 15px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 0 20px #3C7DD9;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    color: #e0e7ff;
+  }
+  #modal h2 {
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 700;
+    color: #80aaff;
+  }
+  #modal p {
+    font-size: 1rem;
+    line-height: 1.3;
+    text-align: center;
+  }
+  #modal button {
+    padding: 10px 16px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  #modal button.confirm {
+    background: #3C7DD9;
+    color: white;
+  }
+  #modal button.confirm:hover {
+    background: #5a94e4;
+  }
+  #modal button.cancel {
+    background: #777c89;
+    color: #d1d1d1;
+    margin-top: 10px;
+  }
+  #modal button.cancel:hover {
+    background: #a2a7b6;
+  }
+  /* Responsive */
+  @media(max-width:768px){
+    header h1 {
+      font-size: 1.5rem;
+    }
+    nav button {
+      min-width: 75px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+    }
+    main {
+      min-height: 320px;
+      padding: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div id="overlay"></div>
+  <div id="app" role="main" aria-label="PRAMZX DeFi Platform on Monad Testnet">
+    <header>
+      <h1>PRAMZX DeFi - Monad Testnet</h1>
+      <div>
+        <button id="connectWalletBtn" aria-live="polite" aria-label="Connect Wallet">Connect Wallet</button>
+        <div id="walletAddress" aria-live="polite" style="margin-top: 6px; font-size: 0.8rem;"></div>
+      </div>
+    </header>
+    <nav aria-label="Main navigation tabs">
+      <button class="tabBtn active" data-tab="swap" aria-selected="true" role="tab">Swap</button>
+      <button class="tabBtn" data-tab="liquidity" aria-selected="false" role="tab">Liquidity</button>
+      <button class="tabBtn" data-tab="stake" aria-selected="false" role="tab">Stake</button>
+      <button class="tabBtn" data-tab="unstake" aria-selected="false" role="tab">Unstake</button>
+      <button class="tabBtn" data-tab="deploy" aria-selected="false" role="tab">Deploy</button>
+      <button class="tabBtn" data-tab="createNft" aria-selected="false" role="tab">Create NFT</button>
+      <button class="tabBtn" data-tab="crosschain" aria-selected="false" role="tab">Cross-Chain</button>
+    </nav>
+
+    <main>
+      <!-- Swap Section -->
+      <section id="swap" class="active" role="tabpanel">
+        <form id="swapForm" aria-label="Token Swap Form">
+          <label for="swapFrom">From Token</label>
+          <select id="swapFrom" required aria-required="true" aria-describedby="swapFromDesc"></select>
+          <label for="swapAmount">Amount</label>
+          <input id="swapAmount" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <label for="swapTo">To Token</label>
+          <select id="swapTo" required aria-required="true"></select>
+          <button class="submitBtn" type="submit" aria-label="Confirm Swap Transaction">Swap</button>
+        </form>
+      </section>
+
+      <!-- Liquidity Section -->
+      <section id="liquidity" role="tabpanel" aria-hidden="true">
+        <form id="liquidityForm" aria-label="Provide Liquidity Form">
+          <label for="liquidityTokenA">Token A</label>
+          <select id="liquidityTokenA" required aria-required="true"></select>
+          <label for="liquidityAmountA">Amount A</label>
+          <input id="liquidityAmountA" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <label for="liquidityTokenB">Token B</label>
+          <select id="liquidityTokenB" required aria-required="true"></select>
+          <label for="liquidityAmountB">Amount B</label>
+          <input id="liquidityAmountB" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Provide Liquidity Transaction">Provide Liquidity</button>
+        </form>
+      </section>
+
+      <!-- Stake Section -->
+      <section id="stake" role="tabpanel" aria-hidden="true">
+        <form id="stakeForm" aria-label="Stake Tokens Form">
+          <label for="stakeToken">Select Token to Stake</label>
+          <select id="stakeToken" required aria-required="true"></select>
+          <label for="stakeAmount">Amount</label>
+          <input id="stakeAmount" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Stake Transaction">Stake</button>
+        </form>
+      </section>
+
+      <!-- Unstake Section -->
+      <section id="unstake" role="tabpanel" aria-hidden="true">
+        <form id="unstakeForm" aria-label="Unstake Tokens Form">
+          <label for="unstakeToken">Select Token to Unstake</label>
+          <select id="unstakeToken" required aria-required="true"></select>
+          <label for="unstakeAmount">Amount</label>
+          <input id="unstakeAmount" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Unstake Transaction">Unstake</button>
+        </form>
+      </section>
+
+      <!-- Deploy Section -->
+      <section id="deploy" role="tabpanel" aria-hidden="true">
+        <form id="deployForm" aria-label="Deploy Smart Contract Form" autocomplete="off">
+          <label for="deployType">Select Contract Type</label>
+          <select id="deployType" required aria-required="true">
+            <option value="erc20">Deploy ERC20 Token</option>
+            <option value="nft">Deploy NFT Contract</option>
+          </select>
+          <label for="deployName">Name</label>
+          <input type="text" id="deployName" placeholder="Token or Contract Name" required aria-required="true" />
+          <label for="deploySymbol">Symbol</label>
+          <input type="text" id="deploySymbol" placeholder="Symbol" required aria-required="true" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Deploy Smart Contract Transaction">Deploy</button>
+        </form>
+      </section>
+
+      <!-- Create NFT Section -->
+      <section id="createNft" role="tabpanel" aria-hidden="true">
+        <form id="createNftForm" aria-label="Create NFT Form" autocomplete="off">
+          <label for="nftName">NFT Name</label>
+          <input type="text" id="nftName" placeholder="NFT Name" required aria-required="true" />
+          <label for="nftDescription">Description</label>
+          <input type="text" id="nftDescription" placeholder="NFT Description" />
+          <label for="nftUri">Image URI</label>
+          <input type="text" id="nftUri" placeholder="Image URL or IPFS URI" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Create NFT Transaction">Create NFT</button>
+        </form>
+      </section>
+
+      <!-- Cross-Chain Section -->
+      <section id="crosschain" role="tabpanel" aria-hidden="true">
+        <form id="crosschainForm" aria-label="Cross-chain Token Transfer Form">
+          <label for="crossFromChain">From Chain</label>
+          <select id="crossFromChain" required aria-required="true"></select>
+          <label for="crossToChain">To Chain</label>
+          <select id="crossToChain" required aria-required="true"></select>
+          <label for="crossToken">Token</label>
+          <select id="crossToken" required aria-required="true"></select>
+          <label for="crossAmount">Amount</label>
+          <input id="crossAmount" type="number" step="any" min="0" placeholder="0.0" required aria-required="true" />
+          <button class="submitBtn" type="submit" aria-label="Confirm Cross-chain Transaction">Cross-Chain Transfer</button>
+        </form>
+      </section>
+
+      <!-- Balance display -->
+      <div id="balances" aria-label="Wallet Token Balances"></div>
+    </main>
+  </div>
+
+  <!-- Modal Confirm -->
+  <div id="modalBackdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div id="modal">
+      <h2 id="modalTitle">Confirm Transaction</h2>
+      <p id="modalDesc">Please confirm your transaction.</p>
+      <button id="modalConfirmBtn" class="confirm" aria-label="Confirm Transaction">Confirm</button>
+      <button id="modalCancelBtn" class="cancel" aria-label="Cancel Transaction">Cancel</button>
+    </div>
+  </div>
+
+<script src="https://cdn.ethers.io/lib/ethers-5.6.umd.min.js" type="application/javascript"></script>
+<script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
+<script>
+  (function(){
+    'use strict';
+
+    // PRAMZX DeFi tokens list with mock contract addresses (replace with real on mainnet/testnet)
+    const tokens = [
+      { symbol: 'MON', address: '0xmon0000000000000000000000000000000000001', decimals: 18, name: 'Mon Token' },
+      { symbol: 'WMOM', address: '0xwmom000000000000000000000000000000000002', decimals: 18, name: 'Wrapped Mon' },
+      { symbol: 'GMON', address: '0xgmon000000000000000000000000000000000003', decimals: 18, name: 'GMon Token' },
+      { symbol: 'SHMON', address: '0xshmon000000000000000000000000000000000004', decimals: 18, name: 'ShMon Token' },
+      { symbol: 'APRMON', address: '0xaprmon00000000000000000000000000000000005', decimals: 18, name: 'APRMon Token' },
+      { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000', decimals: 18, name: 'Ether' },
+      { symbol: 'WETH', address: '0xweth00000000000000000000000000000000006', decimals: 18, name: 'Wrapped Ether' },
+      { symbol: 'WSOLANA', address: '0xwsol000000000000000000000000000000000007', decimals: 9, name: 'Wrapped Solana' },
+      { symbol: 'BEAN', address: '0xbean000000000000000000000000000000000008', decimals: 18, name: 'Bean Token' },
+    ];
+
+    // Supported chains for cross-chain (using testnets EVM chains as example)
+    const chains = [
+      { chainId: 0x5, name: 'Goerli Testnet', rpc: 'https://goerli.infura.io/v3/' },
+      { chainId: 0x61, name: 'BSC Testnet', rpc: 'https://data-seed-prebsc-1-s1.binance.org:8545' },
+      { chainId: 0x13881, name: 'Mumbai Polygon Testnet', rpc: 'https://rpc-mumbai.maticvigil.com' },
+      { chainId: 0x45, name: 'Candle Testnet (Monad)', rpc: 'https://rpc.testnet.monad.xyz' } // Example placeholder
+    ];
+
+    // Variables for wallet and provider
+    let provider;
+    let signer;
+    let userAddress = null;
+    let currentChainId = null;
+    let isWalletConnected = false;
+    let walletProvider; // To distinguish between injected and walletconnect provider
+
+    // WalletConnect Provider instance
+    let wcProvider = null;
+
+    // DOM elements
+    const connectBtn = document.getElementById('connectWalletBtn');
+    const walletAddrDisplay = document.getElementById('walletAddress');
+    const balancesContainer = document.getElementById('balances');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDesc = document.getElementById('modalDesc');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+    // Tab buttons and sections
+    const tabs = document.querySelectorAll('nav button.tabBtn');
+    const sections = document.querySelectorAll('main section');
+
+    // Utility: truncate wallet address for display
+    function truncateAddress(addr){
+      if(!addr) return '';
+      return addr.slice(0,6) + '...' + addr.slice(-4);
+    }
+
+    // Populate token selects
+    function populateTokenSelects(){
+      const selects = document.querySelectorAll('select');
+      selects.forEach(select => {
+        if(select.id.includes('Token') || select.id.includes('swapFrom') || select.id.includes('swapTo') || select.id.includes('crossToken')){
+          // Clear previous
+          select.innerHTML = '';
+          tokens.forEach(t=>{
+            const option = document.createElement('option');
+            option.value = t.address;
+            option.textContent = `${t.symbol} - ${t.name}`;
+            select.appendChild(option);
+          });
+        }
+      });
+    }
+
+    // Populate crosschain chain selects
+    function populateCrossChainSelects(){
+      const fromChainSelect = document.getElementById('crossFromChain');
+      const toChainSelect = document.getElementById('crossToChain');
+      [fromChainSelect,toChainSelect].forEach(select=>{
+        select.innerHTML = '';
+        chains.forEach(c=>{
+          const option = document.createElement('option');
+          option.value = c.chainId;
+          option.textContent = c.name;
+          select.appendChild(option);
+        });
+      });
+      // Select default different chains
+      fromChainSelect.selectedIndex = 3; // Monad testnet assumed
+      toChainSelect.selectedIndex = 0;
+    }
+
+    // Switch visible tab and section
+    function switchTab(tabName){
+      tabs.forEach(btn=>{
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+        btn.setAttribute('aria-selected', btn.dataset.tab === tabName ? "true" : "false");
+      });
+      sections.forEach(sec=>{
+        sec.classList.toggle('active', sec.id === tabName);
+        sec.setAttribute('aria-hidden', sec.id === tabName ? "false" : "true");
+      });
+    }
+
+    // Connect wallet - tries injected first then WalletConnect fallback
+    async function connectWallet(){
+      if(typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask){
+        try {
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          provider = new ethers.providers.Web3Provider(window.ethereum);
+          signer = provider.getSigner();
+          walletProvider = 'injected';
+          currentChainId = (await provider.getNetwork()).chainId;
+          userAddress = await signer.getAddress();
+          isWalletConnected = true;
+          connectBtn.textContent = 'Disconnect Wallet';
+          walletAddrDisplay.textContent = truncateAddress(userAddress);
+          await refreshBalances();
+          // Listen for account or chain change
+          window.ethereum.on('accountsChanged', handleAccountsChanged);
+          window.ethereum.on('chainChanged', handleChainChanged);
+          return;
+        } catch(err){
+          alert('Wallet connection rejected or failed.');
+        }
+      }
+      // WalletConnect fallback
+      if(!wcProvider){
+        wcProvider = new WalletConnectProvider.default({
+          rpc: {
+            5: 'https://goerli.infura.io/v3/', 
+            97: 'https://data-seed-prebsc-1-s1.binance.org:8545', 
+            80001: 'https://rpc-mumbai.maticvigil.com',
+            69: 'https://rpc.testnet.monad.xyz' // sample chain - update as needed
+          },
+          qrcode: true
+        });
+      }
+      try {
+        await wcProvider.enable();
+        provider = new ethers.providers.Web3Provider(wcProvider);
+        signer = provider.getSigner();
+        walletProvider = 'walletconnect';
+        userAddress = await signer.getAddress();
+        currentChainId = (await provider.getNetwork()).chainId;
+        isWalletConnected = true;
+        connectBtn.textContent = 'Disconnect Wallet';
+        walletAddrDisplay.textContent = truncateAddress(userAddress);
+        await refreshBalances();
+        wcProvider.on("accountsChanged", handleAccountsChanged);
+        wcProvider.on("chainChanged", handleChainChanged);
+        wcProvider.on("disconnect", resetConnection);
+      } catch(e){
+        alert('WalletConnect connection failed or cancelled.');
+      }
+    }
+
+    // Disconnect wallet
+    async function disconnectWallet(){
+      if(walletProvider === 'walletconnect' && wcProvider){
+        await wcProvider.disconnect();
+        wcProvider = null;
+      }
+      resetConnection();
+    }
+
+    // Reset connection state
+    function resetConnection(){
+      provider = null;
+      signer = null;
+      userAddress = null;
+      currentChainId = null;
+      isWalletConnected = false;
+      walletProvider = null;
+      connectBtn.textContent = 'Connect Wallet';
+      walletAddrDisplay.textContent = '';
+      balancesContainer.innerHTML = '';
+    }
+
+    // Handle accounts changed
+    async function handleAccountsChanged(accounts){
+      if(accounts.length === 0) {
+        resetConnection();
+      } else {
+        userAddress = accounts[0];
+        walletAddrDisplay.textContent = truncateAddress(userAddress);
+        await refreshBalances();
+      }
+    }
+
+    // Handle network changed
+    async function handleChainChanged(_chainId){
+      currentChainId = parseInt(_chainId, 16);
+      await refreshBalances();
+    }
+
+    // Erc20 balance fetcher
+    async function getTokenBalance(tokenAddress, address){
+      if(tokenAddress === '0x0000000000000000000000000000000000000000'){
+        // ETH native balance
+        let b = await provider.getBalance(address);
+        return ethers.utils.formatEther(b);
+      }
+      const erc20Abi = [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)"
+      ];
+      try {
+        const tokenContract = new ethers.Contract(tokenAddress, erc20Abi, provider);
+        const balRaw = await tokenContract.balanceOf(address);
+        const decimals = tokens.find(t=>t.address.toLowerCase()===tokenAddress.toLowerCase())?.decimals || 18;
+        return ethers.utils.formatUnits(balRaw, decimals);
+      } catch(e){
+        return '0';
+      }
+    }
+
+    // Refresh balances UI
+    async function refreshBalances(){
+      if(!isWalletConnected || !userAddress) {
+        balancesContainer.innerHTML = '';
+        return;
+      }
+      balancesContainer.innerHTML = '<strong>Balances:</strong>';
+      for(const t of tokens){
+        try {
+          let bal = await getTokenBalance(t.address, userAddress);
+          bal = parseFloat(bal);
+          if (isNaN(bal)) bal = 0;
+          const balStr = bal.toFixed(4);
+          const div = document.createElement('div');
+          div.className = 'balanceItem';
+          div.textContent = `${t.symbol}: ${balStr}`;
+          balancesContainer.appendChild(div);
+        } catch(e){}
+      }
+    }
+
+    // Modal helpers
+    function showModal(title, description, confirmCallback, cancelCallback){
+      modalTitle.textContent = title;
+      modalDesc.textContent = description;
+      modalBackdrop.style.display = 'flex';
+      modalBackdrop.setAttribute('aria-hidden', 'false');
+
+      function onConfirm(){
+        confirmCallback && confirmCallback();
+        closeModal();
+      }
+      function onCancel(){
+        cancelCallback && cancelCallback();
+        closeModal();
+      }
+
+      modalConfirmBtn.onclick = onConfirm;
+      modalCancelBtn.onclick = onCancel;
+    }
+    function closeModal(){
+      modalBackdrop.style.display = 'none';
+      modalBackdrop.setAttribute('aria-hidden', 'true');
+      modalConfirmBtn.onclick = null;
+      modalCancelBtn.onclick = null;
+    }
+
+    // Simulate transaction sending with Promises
+    async function simulateTransaction(actionDesc, options = {}){
+      return new Promise((resolve, reject) => {
+        showModal(
+          `Confirm ${actionDesc}`,
+          `Do you want to proceed with the ${actionDesc.toLowerCase()} transaction?`,
+          async () => {
+            // Simulate wait and "sending transaction"
+            if(options.onStart) options.onStart();
+            setTimeout(() => {
+              if(options.shouldFail){
+                alert(actionDesc + ' transaction failed.');
+                reject(new Error('Transaction failed'));
+              } else {
+                alert(actionDesc + ' transaction succeeded!');
+                resolve('success');
+              }
+            }, options.simulatedWait || 2000);
+          },
+          () => {
+            alert(actionDesc + ' transaction cancelled.');
+            reject(new Error('Transaction cancelled'));
+          }
+        );
+      });
+    }
+
+    // Event handlers for forms
+
+    // 1. Swap form submit
+    const swapForm = document.getElementById('swapForm');
+    swapForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const fromTokenAddr = swapForm.swapFrom.value;
+      const toTokenAddr = swapForm.swapTo.value;
+      const amountStr = swapForm.swapAmount.value;
+      if(fromTokenAddr === toTokenAddr){
+        alert('From and To tokens must be different.');
+        return;
+      }
+      if(parseFloat(amountStr) <= 0){
+        alert('Amount must be positive.');
+        return;
+      }
+      try {
+        await simulateTransaction('Swap');
+      } catch(e){}
+      await refreshBalances();
+      swapForm.reset();
+    });
+
+    // 2. Liquidity form submit
+    const liquidityForm = document.getElementById('liquidityForm');
+    liquidityForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const tokenA = liquidityForm.liquidityTokenA.value;
+      const tokenB = liquidityForm.liquidityTokenB.value;
+      const amountA = liquidityForm.liquidityAmountA.value;
+      const amountB = liquidityForm.liquidityAmountB.value;
+      if(tokenA === tokenB){
+        alert('Token A and Token B must be different.');
+        return;
+      }
+      if(parseFloat(amountA) <= 0 || parseFloat(amountB) <= 0){
+        alert('Amounts must be positive.');
+        return;
+      }
+      try {
+        await simulateTransaction('Provide Liquidity');
+      } catch(e){}
+      await refreshBalances();
+      liquidityForm.reset();
+    });
+
+    // 3. Stake form submit
+    const stakeForm = document.getElementById('stakeForm');
+    stakeForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const token = stakeForm.stakeToken.value;
+      const amount = stakeForm.stakeAmount.value;
+      if(parseFloat(amount) <= 0){
+        alert('Amount must be positive.');
+        return;
+      }
+      try {
+        await simulateTransaction('Stake');
+      } catch(e){}
+      await refreshBalances();
+      stakeForm.reset();
+    });
+
+    // 4. Unstake form submit
+    const unstakeForm = document.getElementById('unstakeForm');
+    unstakeForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const token = unstakeForm.unstakeToken.value;
+      const amount = unstakeForm.unstakeAmount.value;
+      if(parseFloat(amount) <= 0){
+        alert('Amount must be positive.');
+        return;
+      }
+      try {
+        await simulateTransaction('Unstake');
+      } catch(e){}
+      await refreshBalances();
+      unstakeForm.reset();
+    });
+
+    // 5. Deploy form submit
+    const deployForm = document.getElementById('deployForm');
+    deployForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const type = deployForm.deployType.value;
+      const name = deployForm.deployName.value.trim();
+      const symbol = deployForm.deploySymbol.value.trim();
+      if(!name || !symbol){
+        alert('Name and Symbol are required.');
+        return;
+      }
+      try {
+        await simulateTransaction('Deploy Smart Contract');
+      } catch(e){}
+      deployForm.reset();
+    });
+
+    // 6. Create NFT form submit
+    const createNftForm = document.getElementById('createNftForm');
+    createNftForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const nftName = createNftForm.nftName.value.trim();
+      if(!nftName){
+        alert('NFT Name is required.');
+        return;
+      }
+      try {
+        await simulateTransaction('Create NFT');
+      } catch(e){}
+      createNftForm.reset();
+    });
+
+    // 7. Cross-chain form submit
+    const crosschainForm = document.getElementById('crosschainForm');
+    crosschainForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      if(!isWalletConnected){
+        alert('Please connect your wallet first.');
+        return;
+      }
+      const fromChain = crosschainForm.crossFromChain.value;
+      const toChain = crosschainForm.crossToChain.value;
+      const token = crosschainForm.crossToken.value;
+      const amount = crosschainForm.crossAmount.value;
+      if(fromChain === toChain){
+        alert('From and To chains must be different.');
+        return;
+      }
+      if(parseFloat(amount) <= 0){
+        alert('Amount must be positive.');
+        return;
+      }
+      try {
+        await simulateTransaction('Cross-Chain Transfer');
+      } catch(e){}
+      crosschainForm.reset();
+    });
+
+    // Connect/disconnect logic
+    connectBtn.addEventListener('click', async ()=>{
+      if(isWalletConnected){
+        disconnectWallet();
+      } else {
+        await connectWallet();
+      }
+    });
+
+    // Tabs event listeners
+    tabs.forEach(tab => {
+      tab.addEventListener('click', ()=>{
+        switchTab(tab.dataset.tab);
+      });
+    });
+
+    // Initialize UI with token and chain selects
+    function init(){
+      populateTokenSelects();
+      populateCrossChainSelects();
+    }
+
+    init();
+
+    window.addEventListener('beforeunload', ()=>{
+      if(walletProvider === 'walletconnect' && wcProvider){
+        wcProvider.disconnect();
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
+
